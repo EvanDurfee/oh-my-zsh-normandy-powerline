@@ -2,7 +2,7 @@
 
 __normandy_pl_post_git_seg () {
 	local PARENT_DIR_FG="90"
-	local CURRENT_DIR_FG="15"
+	local CURRENT_DIR_FG="97"
 	# local CURRENT_DIR=$(pwd | sed -E "s#^$HOME($|(/.*))#~\2#") # assumes no # are in the path... this seems reasonable
 	local GIT_DIR=$(git rev-parse --show-toplevel 2>/dev/null)
 	local CONTENT=""

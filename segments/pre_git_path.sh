@@ -1,19 +1,38 @@
 #!/bin/sh
 
+__normandy_pl_dirname () {
+	# variation on dirname that returns the last element of a path
+	# eg '~/foo/bar' -> 'bar', and '~' -> '~'
+	echo -n $1 | sed -E "s#^.*/##"
+}
+
+__normandy_pl_basename () {
+	# variation on basename that returns the path preceding the final entry, or nothing
+	# eg '~/foo/bar' -> '~/foo/', and '~' -> ''
+	echo -n $1 | sed -E "s#[^/]+\$##"
+}
+
+__normandy_pl_swap_home () {
+	# replaces $HOME in a path with ~
+	echo -n $1 | sed -E "s#^$HOME($|(/))#~\2#"
+}
+
+__normandy_pl_git_dir () {
+	# path to the git root or nothing if not in a git tree
+	echo -n $(git rev-parse --show-toplevel 2>/dev/null)
+}
+
 __normandy_pl_pre_git_seg () {
 	local PARENT_DIR_FG="90"
-	local CURRENT_DIR_FG="15"
-	# local CURRENT_DIR=$(pwd | sed -E "s#^$HOME($|(/.*))#~\2#") # assumes no # are in the path... this seems reasonable
-	local GIT_DIR=$(git rev-parse --show-toplevel 2>/dev/null)
-	local WORKING_PATH=""
-	if [ "$GIT_DIR" = "" ]; then
-		local WORKING_PATH="$GIT_DIR"
-	else
+	local CURRENT_DIR_FG="97"
+
+	local WORKING_PATH="$(__normandy_pl_git_dir)"
+	if [ "$WORKING_PATH" = "" ]; then
 		local WORKING_PATH="$(pwd)"
 	fi
-	local WORKING_PATH=$(echo $WORKING_PATH | sed -E "s#^$HOME($|(/.*))#~\2#") # replace leading $HOME with ~
-	local PARENT_DIR=$(echo $WORKING_PATH | sed -E "s#[^/]+\$##")
-	local CURRENT_DIR=$(echo $WORKING_PATH | sed -E "s#^.*/##")
+	local WORKING_PATH=$(__normandy_pl_swap_home "$WORKING_PATH")
+	local PARENT_DIR=$(__normandy_pl_basename "$WORKING_PATH")
+	local CURRENT_DIR=$(__normandy_pl_dirname "$WORKING_PATH")
 
 	local CONTENT=""
 	if [ "$PARENT_DIR" = "" ]; then : ; else
