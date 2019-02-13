@@ -22,6 +22,17 @@ __normandy_pl_git_dir () {
 	echo -n $(git rev-parse --show-toplevel 2>/dev/null)
 }
 
+__normandy_pl_shorten_path_ellipses () {
+	# swaps all but the last ($2 + 1) path elements defined as (/.+) with ellipses
+	# local ELLIPSES_GLYPH="..."
+	local ELLIPSES_GLYPH="\u2026" # …
+	local SHORTENED=$(echo -n $1 | sed -E "s#^.*(/([^/]+/){$2}[^/]+)\$#\1#")
+	if [ "$SHORTENED" = "$1" ]; then : ; else
+		local SHORTENED="$ELLIPSES_GLYPH$SHORTENED"
+	fi
+	echo -n $SHORTENED
+}
+
 __normandy_pl_pre_git_seg () {
 	local PARENT_DIR_FG="90"
 	local CURRENT_DIR_FG="97"
@@ -31,6 +42,7 @@ __normandy_pl_pre_git_seg () {
 		local WORKING_PATH="$(pwd)"
 	fi
 	local WORKING_PATH=$(__normandy_pl_swap_home "$WORKING_PATH")
+	local WORKING_PATH=$(__normandy_pl_shorten_path_ellipses "$WORKING_PATH" 2)
 	local PARENT_DIR=$(__normandy_pl_basename "$WORKING_PATH")
 	local CURRENT_DIR=$(__normandy_pl_dirname "$WORKING_PATH")
 
