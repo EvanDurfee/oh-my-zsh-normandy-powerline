@@ -54,14 +54,14 @@ __normandy_pl_git_untracked_files () {
 
 __normandy_pl_git_seg () {
 	# local NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='\u2B07 ' #⬇
-	local NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='-'
-	# local NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='\uF0DD'
+	# local NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='-'
+	local NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='\uF0DD'
 	# local NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='\u2B06 ' #⬆
-	local NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='+'
-	# local NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='\uF0DE'
+	# local NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='+'
+	local NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='\uF0DE'
 	# local NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='\u2B0D ' #⬍
-	local NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='±'
-	# local NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='\uF0DC'
+	# local NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='±'
+	local NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='\uF0DC'
 	local NORMANDY_PL_GIT_BRANCH_GLYPH='\uF418'
 	local NORMANDY_PL_GIT_DETATCHED_GLYPH='\uF417'
 	# local NORMANDY_PL_GIT_TAG_GLYPH='\u2302' # ⌂
@@ -109,7 +109,8 @@ __normandy_pl_git_seg () {
 			local CONTENT="$CONTENT$NORMANDY_PL_GIT_BRANCH_GLYPH $GIT_REF "
 		fi
 		# stashed edits
-		if [ $(git stash list | wc -l) -ne 0 ]; then
+		# if [ $(git stash list | wc -l) -ne 0 ]; then
+		if [ $(git rev-parse --verify --quiet refs/stash) = "" ]; then : ; else
 			local CONTENT="$CONTENT$NORMANDY_PL_GIT_STASHED_EDITS_GLYPH "
 		fi
 		# unstaged edits
