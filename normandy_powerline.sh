@@ -13,9 +13,18 @@ NORMANDY_PL_SHELL_STATUS_SEG_BG=255 # white
 NORMANDY_PL_EXIT_STATUS_GLYPH="! "
 NORMANDY_PL_EXIT_STATUS_FG=1 # red
 NORMANDY_PL_JOB_STATUS_GLYPH="% "
-NORMANDY_PL_JOB_STATUS_FG=6 # cyan
+NORMANDY_PL_JOB_STATUS_FG=24 # dark blue
 NORMANDY_PL_IS_ROOT_GLYPH="\$ "
 NORMANDY_PL_IS_ROOT_FG=2 # green
+
+# user host segment
+NORMANDY_PL_USER_HOST_BG=250 # grey
+NORMANDY_PL_USER_FG=24 # white
+NORMANDY_PL_HOST_FG=24 # white
+NORMANDY_PL_AT_HOSTNAME_GLYPH="@"
+NORMANDY_PL_SHOW_USER="1" # null (never), ssh, or other (always)
+NORMANDY_PL_SHOW_HOST="1" # null (never), ssh, or other (always)
+
 
 # path
 NORMANDY_PL_PATH_ELLIPSES_GLYPH="\u2026" # …
@@ -23,8 +32,8 @@ NORMANDY_PL_PATH_ELLIPSES_GLYPH="\u2026" # …
 
 NORMANDY_PL_WRITABLE_DIR_BG=236 # dark grey
 NORMANDY_PL_NON_WRITABLE_DIR_BG=52 # dark red
-NORMANDY_PL_PATH_FG=8 # dark grey
-NORMANDY_PL_PROJECT_DIR_FG=15 # white
+NORMANDY_PL_PATH_FG=246 # grey
+NORMANDY_PL_PROJECT_DIR_FG=255 # white
 
 
 
@@ -107,6 +116,29 @@ __normandy_pl_shell_status_seg () {
 	fi
 }
 
+__normandy_pl_user_host_seg () {
+	local SHOW_USER="$NORMANDY_PL_SHOW_USER"
+	local SHOW_HOST="$NORMANDY_PL_SHOW_HOST"
+	[ "$NORMANDY_PL_SHOW_USER" = "ssh" -a "$SSH_CONNECTION" = "" ] && local SHOW_USER=""
+	[ "$NORMANDY_PL_SHOW_HOST" = "ssh" -a "$SSH_CONNECTION" = "" ] && local SHOW_HOST=""
+
+	if [ "$SHOW_USER" -o "$SHOW_HOST" ]; then
+		__normandy_pl_start_segment_l $NORMANDY_PL_USER_HOST_BG
+		__normandy_pl_set_bold
+		if [ "$SHOW_USER" ]; then
+			__normandy_pl_set_fg $NORMANDY_PL_USER_FG
+			echo -n "$(whoami)"
+		fi
+		if [ "$SHOW_HOST" ]; then
+			__normandy_pl_set_fg $NORMANDY_PL_HOST_FG
+			[ "$SHOW_USER" ] && echo -n "$NORMANDY_PL_AT_HOSTNAME_GLYPH"
+			echo -n "$(hostname)"
+		fi
+		echo -n " "
+		__normandy_pl_unset_bold
+	fi
+}
+
 __normandy_pl_dirname () {
 	# variation on dirname that returns the last element of a path
 	# eg '~/foo/bar' -> 'bar', and '~' -> '~'
@@ -158,31 +190,22 @@ __normandy_pl_pre_git_path_seg () {
 		__normandy_pl_dirname "$WORKING_PATH "
 	else
 		__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
-		__normandy_pl_set_bold
 		__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+		__normandy_pl_basename "$WORKING_PATH"
+		__normandy_pl_set_bold
+		__normandy_pl_dirname "$WORKING_PATH "
 		echo -n "$WORKING_PATH "
 	fi
 	__normandy_pl_unset_bold
-
-
-	# local PARENT_DIR=$(__normandy_pl_basename "$WORKING_PATH")
-	# local CURRENT_DIR=$(__normandy_pl_dirname "$WORKING_PATH")
-	#
-	# local CONTENT=""
-	# if [ "$PARENT_DIR" != "" ]; then
-	# 	__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
-	# 	echo -n $PARENT_DIR
-	# fi
-	# __normandy_pl_set_fg $NORMANDY_PL_PROJECT_DIR_FG
-	# __normandy_pl_set_bold
-	# echo -n "$CURRENT_DIR "
-	# __normandy_pl_unset_bold
 }
+
+
 
 __normandy_pl_prompt_left () {
 	NORMANDY_PL_BG_COLOR=""
 	echo "BEGIN"
 	__normandy_pl_shell_status_seg
+	__normandy_pl_user_host_seg
 	__normandy_pl_pre_git_path_seg
 	__normandy_pl_end_prompt_l
 	echo ""
