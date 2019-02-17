@@ -3,10 +3,10 @@
 # global
 NORMANDY_PL_BG_COLOR=""
 
-NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH='\uE0B0' # right arrow
-NORMANDY_PL_LEFT_SEPERATOR_GLYPH='\uE0B1'
-NORMANDY_PL_RIGHT_SEPERATOR_FILLED_GLYPH='\uE0B2' # left arrow
-NORMANDY_PL_RIGHT_SEPERATOR_GLYPH='\uE0B3'
+NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH=$(echo -ne '\uE0B0') # right arrow
+NORMANDY_PL_LEFT_SEPERATOR_GLYPH=$(echo -ne '\uE0B1')
+NORMANDY_PL_RIGHT_SEPERATOR_FILLED_GLYPH=$(echo -ne '\uE0B2') # left arrow
+NORMANDY_PL_RIGHT_SEPERATOR_GLYPH=$(echo -ne '\uE0B3')
 
 # shell status segment
 NORMANDY_PL_SHELL_STATUS_SEG_BG=255 # white
@@ -22,18 +22,46 @@ NORMANDY_PL_USER_HOST_BG=250 # grey
 NORMANDY_PL_USER_FG=24 # white
 NORMANDY_PL_HOST_FG=24 # white
 NORMANDY_PL_AT_HOSTNAME_GLYPH="@"
-NORMANDY_PL_SHOW_USER="1" # null (never), ssh, or other (always)
-NORMANDY_PL_SHOW_HOST="1" # null (never), ssh, or other (always)
+NORMANDY_PL_SHOW_USER="ssh" # null (never), ssh, or other (always)
+NORMANDY_PL_SHOW_HOST="ssh" # null (never), ssh, or other (always)
 
 
-# path
-NORMANDY_PL_PATH_ELLIPSES_GLYPH="\u2026" # …
+# path segments
+NORMANDY_PL_PATH_ELLIPSES_GLYPH=$(echo -ne '\u2026') # …
 # NORMANDY_PL_PATH_ELLIPSES_GLYPH="..."
 
 NORMANDY_PL_WRITABLE_DIR_BG=236 # dark grey
 NORMANDY_PL_NON_WRITABLE_DIR_BG=52 # dark red
 NORMANDY_PL_PATH_FG=246 # grey
 NORMANDY_PL_PROJECT_DIR_FG=255 # white
+
+
+# git segment
+
+# NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='\u2B07 ' #⬇
+# NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH='-'
+NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH=$(echo -ne '\uF0DD')
+# NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='\u2B06 ' #⬆
+# NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH='+'
+NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH=$(echo -ne '\uF0DE')
+# NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='\u2B0D ' #⬍
+# NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH='±'
+NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH=$(echo -ne '\uF0DC')
+NORMANDY_PL_GIT_BRANCH_GLYPH=$(echo -ne '\uF418')
+NORMANDY_PL_GIT_DETATCHED_GLYPH=$(echo -ne '\uF417')
+# NORMANDY_PL_GIT_TAG_GLYPH='\u2302' # ⌂
+NORMANDY_PL_GIT_TAG_GLYPH=$(echo -ne '\uF412')
+NORMANDY_PL_GIT_UNSTAGED_CHANGES_GLYPH=$(echo -ne '\uF448')
+NORMANDY_PL_GIT_STAGED_CHANGES_GLYPH=$(echo -ne '\uF0C7')
+NORMANDY_PL_GIT_STASHED_CHANGES_GLYPH=$(echo -ne '\uF0C6')
+NORMANDY_PL_GIT_UNTRACKED_FILES_GLYPH=$(echo -ne '\uF128')
+
+NORMANDY_PL_CLEAN_GIT_BG=76
+NORMANDY_PL_CLEAN_GIT_FG=236
+NORMANDY_PL_UNSTAGED_GIT_BG=124
+NORMANDY_PL_UNSTAGED_GIT_FG=246
+NORMANDY_PL_STAGED_GIT_BG=172
+NORMANDY_PL_STAGED_GIT_FG=236
 
 
 
@@ -76,11 +104,11 @@ __normandy_pl_end_prompt_l () {
 	case $NORMANDY_PL_BG_COLOR in
 		"")
 			__normandy_pl_set_fg 1 # default color ?
-			echo -ne " $NORMANDY_PL_LEFT_SEPERATOR_GLYPH "
+			echo -n " $NORMANDY_PL_LEFT_SEPERATOR_GLYPH "
 			;;
 		*)
 			__normandy_pl_set_fg $NORMANDY_PL_BG_COLOR
-			echo -ne "$NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH "
+			echo -n "$NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH "
 			;;
 	esac
 	echo -ne "\001\e[0m\002"
@@ -172,8 +200,6 @@ __normandy_pl_shorten_path_ellipses () {
 }
 
 __normandy_pl_pre_git_path_seg () {
-	# TODO: bold and no color dif for non-writable dirs
-
 	local WORKING_PATH="$(__normandy_pl_git_dir)"
 	if [ "$WORKING_PATH" = "" ]; then
 		local WORKING_PATH="$(pwd)"
@@ -187,18 +213,88 @@ __normandy_pl_pre_git_path_seg () {
 		__normandy_pl_basename "$WORKING_PATH"
 		__normandy_pl_set_bold
 		__normandy_pl_set_fg $NORMANDY_PL_PROJECT_DIR_FG
-		__normandy_pl_dirname "$WORKING_PATH "
+		__normandy_pl_dirname "$WORKING_PATH"
 	else
 		__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
 		__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
 		__normandy_pl_basename "$WORKING_PATH"
 		__normandy_pl_set_bold
-		__normandy_pl_dirname "$WORKING_PATH "
-		echo -n "$WORKING_PATH "
+		__normandy_pl_dirname "$WORKING_PATH"
 	fi
 	__normandy_pl_unset_bold
+	echo -n " "
 }
 
+__normandy_pl_git_seg () {
+	local GIT_DIR="$(__normandy_pl_git_dir)"
+	if [ "$GIT_DIR" ]; then
+		local STASHED_CHANGES=""
+		local UNSTAGED_CHANGES=""
+		local STAGED_CHANGES=""
+		local UNTRACKED_FILES=""
+
+		# refresh the index
+		git update-index -q --ignore-submodules --refresh
+
+		# stashed changes
+		[ "$(git rev-parse --verify --quiet refs/stash)" != "" ] && local STASHED_CHANGES=1
+		# unstaged changes
+		git diff-files --quiet --ignore-submodules --
+		[ $? -ne 0 ] && local UNSTAGED_CHANGES=1
+		# staged changes
+		git diff-index --cached --quiet HEAD --ignore-submodules --
+		[ $? -ne 0 ] && local STAGED_CHANGES=1
+		 # untracked files
+		[ "$(git ls-files --exclude-standard --others $GIT_DIR)" ] && local UNTRACKED_FILES=1
+
+		# set colors
+		if [ "$UNSTAGED_CHANGES" ]; then
+			__normandy_pl_start_segment_l $NORMANDY_PL_UNSTAGED_GIT_BG
+			__normandy_pl_set_fg $NORMANDY_PL_UNSTAGED_GIT_FG
+		elif [ "$STAGED_CHANGES" ]; then
+			__normandy_pl_start_segment_l $NORMANDY_PL_STAGED_GIT_BG
+			__normandy_pl_set_fg $NORMANDY_PL_STAGED_GIT_FG
+		else
+			__normandy_pl_start_segment_l $NORMANDY_PL_CLEAN_GIT_BG
+			__normandy_pl_set_fg $NORMANDY_PL_CLEAN_GIT_FG
+		fi
+
+		# ahead / behind upstream (if set)
+		local DOWNSTREAM_COMMITS="$(git rev-list --count @{upstream}..HEAD 2>/dev/null)"
+		local UPSTREAM_COMMITS="$(git rev-list --count HEAD..@{upstream} 2>/dev/null)"
+
+		if [ "$DOWNSTREAM_COMMITS" ]; then
+			if [ "$UPSTREAM_COMMITS" ]; then
+				echo -n "$NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH"
+			else
+				echo -n "$NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH"
+			fi
+		elif [ "$UPSTREAM_COMMITS" ]; then
+			echo -n "$NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH"
+		fi
+
+		# current branch / tag / hash
+		local GIT_REF="$(git symbolic-ref --short HEAD 2>/dev/null)"
+		if [ "$GIT_REF" ]; then
+			# branch name
+			echo -n "$NORMANDY_PL_GIT_BRANCH_GLYPH $GIT_REF "
+		else
+			local GIT_TAG="$(git describe --tags --no-long 2>/dev/null)"
+			if [ $? -eq 0 ]; then
+				# latest tag name
+				echo -n "$NORMANDY_PL_GIT_TAG_GLYPH $GIT_TAG "
+			else
+				# short hash
+				echo -n "$NORMANDY_PL_GIT_DETATCHED_GLYPH $(git rev-parse --short HEAD 2>/dev/null) "
+			fi
+		fi
+
+		[ "$STASHED_CHANGES" ] && echo -n "$NORMANDY_PL_GIT_STASHED_CHANGES_GLYPH "
+		[ "$UNSTAGED_CHANGES" ] && echo -n "$NORMANDY_PL_GIT_UNSTAGED_CHANGES_GLYPH "
+		[ "$STAGED_CHANGES" ] && echo -n "$NORMANDY_PL_GIT_STAGED_CHANGES_GLYPH "
+		[ "$UNTRACKED_FILES" ] && echo -n "$NORMANDY_PL_GIT_UNTRACKED_FILES_GLYPH "
+	fi
+}
 
 
 __normandy_pl_prompt_left () {
@@ -207,6 +303,7 @@ __normandy_pl_prompt_left () {
 	__normandy_pl_shell_status_seg
 	__normandy_pl_user_host_seg
 	__normandy_pl_pre_git_path_seg
+	__normandy_pl_git_seg
 	__normandy_pl_end_prompt_l
 	echo ""
 	echo "END"
