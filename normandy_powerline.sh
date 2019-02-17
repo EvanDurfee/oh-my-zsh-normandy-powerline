@@ -9,7 +9,7 @@ NORMANDY_PL_RIGHT_SEPERATOR_FILLED_GLYPH=$(echo -ne '\uE0B2') # left arrow
 NORMANDY_PL_RIGHT_SEPERATOR_GLYPH=$(echo -ne '\uE0B3')
 
 # shell status segment
-NORMANDY_PL_SHELL_STATUS_SEG_BG=255 # white
+NORMANDY_PL_SHELL_STATUS_SEG_BG=231 # white
 NORMANDY_PL_EXIT_STATUS_GLYPH="! "
 NORMANDY_PL_EXIT_STATUS_FG=1 # red
 NORMANDY_PL_JOB_STATUS_GLYPH="% "
@@ -27,13 +27,16 @@ NORMANDY_PL_SHOW_HOST="ssh" # null (never), ssh, or other (always)
 
 
 # path segments
+NORMANDY_PL_PRE_GIT_BASENAME_SEGMENTS=0
+NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS=2
 NORMANDY_PL_PATH_ELLIPSES_GLYPH=$(echo -ne '\u2026') # …
 # NORMANDY_PL_PATH_ELLIPSES_GLYPH="..."
 
 NORMANDY_PL_WRITABLE_DIR_BG=236 # dark grey
+NORMANDY_PL_WRITABLE_BASENAME_FG=249 # grey
 NORMANDY_PL_NON_WRITABLE_DIR_BG=52 # dark red
-NORMANDY_PL_PATH_FG=246 # grey
-NORMANDY_PL_PROJECT_DIR_FG=255 # white
+NORMANDY_PL_NON_WRITABLE_BASENAME_FG=249 # grey
+NORMANDY_PL_PROJECT_DIR_FG=231 # white
 
 
 # git segment
@@ -56,12 +59,12 @@ NORMANDY_PL_GIT_STAGED_CHANGES_GLYPH=$(echo -ne '\uF0C7')
 NORMANDY_PL_GIT_STASHED_CHANGES_GLYPH=$(echo -ne '\uF0C6')
 NORMANDY_PL_GIT_UNTRACKED_FILES_GLYPH=$(echo -ne '\uF128')
 
-NORMANDY_PL_CLEAN_GIT_BG=76
-NORMANDY_PL_CLEAN_GIT_FG=236
-NORMANDY_PL_UNSTAGED_GIT_BG=124
-NORMANDY_PL_UNSTAGED_GIT_FG=246
-NORMANDY_PL_STAGED_GIT_BG=172
-NORMANDY_PL_STAGED_GIT_FG=236
+NORMANDY_PL_CLEAN_GIT_BG=190 # light green
+NORMANDY_PL_CLEAN_GIT_FG=236 # dark grey
+NORMANDY_PL_UNSTAGED_GIT_BG=124 # dark red
+NORMANDY_PL_UNSTAGED_GIT_FG=231 # white
+NORMANDY_PL_STAGED_GIT_BG=220 # yellow-orange
+NORMANDY_PL_STAGED_GIT_FG=236 # dark grey
 
 
 
@@ -104,7 +107,7 @@ __normandy_pl_end_prompt_l () {
 	case $NORMANDY_PL_BG_COLOR in
 		"")
 			__normandy_pl_set_fg 1 # default color ?
-			echo -n " $NORMANDY_PL_LEFT_SEPERATOR_GLYPH "
+			echo -n "$NORMANDY_PL_LEFT_SEPERATOR_GLYPH "
 			;;
 		*)
 			__normandy_pl_set_fg $NORMANDY_PL_BG_COLOR
@@ -201,22 +204,24 @@ __normandy_pl_shorten_path_ellipses () {
 
 __normandy_pl_pre_git_path_seg () {
 	local WORKING_PATH="$(__normandy_pl_git_dir)"
+	local BASENAME_SEGMENTS=$NORMANDY_PL_PRE_GIT_BASENAME_SEGMENTS
 	if [ "$WORKING_PATH" = "" ]; then
 		local WORKING_PATH="$(pwd)"
+		local BASENAME_SEGMENTS=$NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
 	fi
 	local WORKING_PATH=$(__normandy_pl_swap_home "$WORKING_PATH")
-	local WORKING_PATH=$(__normandy_pl_shorten_path_ellipses "$WORKING_PATH" 2)
+	local WORKING_PATH=$(__normandy_pl_shorten_path_ellipses "$WORKING_PATH" $BASENAME_SEGMENTS)
 
 	if [ -w $(pwd) ]; then
 		__normandy_pl_start_segment_l $NORMANDY_PL_WRITABLE_DIR_BG
-		__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+		__normandy_pl_set_fg $NORMANDY_PL_WRITABLE_BASENAME_FG
 		__normandy_pl_basename "$WORKING_PATH"
 		__normandy_pl_set_bold
 		__normandy_pl_set_fg $NORMANDY_PL_PROJECT_DIR_FG
 		__normandy_pl_dirname "$WORKING_PATH"
 	else
 		__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
-		__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+		__normandy_pl_set_fg $NORMANDY_PL_NON_WRITABLE_BASENAME_FG
 		__normandy_pl_basename "$WORKING_PATH"
 		__normandy_pl_set_bold
 		__normandy_pl_dirname "$WORKING_PATH"
@@ -274,25 +279,45 @@ __normandy_pl_git_seg () {
 		fi
 
 		# current branch / tag / hash
-		local GIT_REF="$(git symbolic-ref --short HEAD 2>/dev/null)"
-		if [ "$GIT_REF" ]; then
+		local HEAD_NAME="$(git symbolic-ref --short HEAD 2>/dev/null)"
+		if [ "$HEAD_NAME" ]; then
 			# branch name
-			echo -n "$NORMANDY_PL_GIT_BRANCH_GLYPH $GIT_REF "
+			echo -n "$NORMANDY_PL_GIT_BRANCH_GLYPH "
 		else
-			local GIT_TAG="$(git describe --tags --no-long 2>/dev/null)"
+			local HEAD_NAME="$(git describe --tags --no-long 2>/dev/null)"
 			if [ $? -eq 0 ]; then
 				# latest tag name
-				echo -n "$NORMANDY_PL_GIT_TAG_GLYPH $GIT_TAG "
+				echo -n "$NORMANDY_PL_GIT_TAG_GLYPH "
 			else
 				# short hash
-				echo -n "$NORMANDY_PL_GIT_DETATCHED_GLYPH $(git rev-parse --short HEAD 2>/dev/null) "
+				local HEAD_NAME="$(git rev-parse --short HEAD 2>/dev/null)"
+				echo -n "$NORMANDY_PL_GIT_DETATCHED_GLYPH "
 			fi
 		fi
+		echo -n "$HEAD_NAME "
 
 		[ "$STASHED_CHANGES" ] && echo -n "$NORMANDY_PL_GIT_STASHED_CHANGES_GLYPH "
 		[ "$UNSTAGED_CHANGES" ] && echo -n "$NORMANDY_PL_GIT_UNSTAGED_CHANGES_GLYPH "
 		[ "$STAGED_CHANGES" ] && echo -n "$NORMANDY_PL_GIT_STAGED_CHANGES_GLYPH "
 		[ "$UNTRACKED_FILES" ] && echo -n "$NORMANDY_PL_GIT_UNTRACKED_FILES_GLYPH "
+	fi
+}
+
+
+__normandy_pl_post_git_seg () {
+	local GIT_DIR=$(__normandy_pl_git_dir)
+	local WORKING_PATH=""
+	[ "$GIT_DIR" ] && local WORKING_PATH=$(pwd | sed -E "s#^${GIT_DIR}/?##")
+	if [ "$WORKING_PATH" ]; then
+		if [ -w $(pwd) ]; then
+			__normandy_pl_start_segment_l $NORMANDY_PL_WRITABLE_DIR_BG
+			__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+		else
+			__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
+			__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+		fi
+		__normandy_pl_shorten_path_ellipses "$WORKING_PATH" $NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
+		echo -n " "
 	fi
 }
 
@@ -304,6 +329,7 @@ __normandy_pl_prompt_left () {
 	__normandy_pl_user_host_seg
 	__normandy_pl_pre_git_path_seg
 	__normandy_pl_git_seg
+	__normandy_pl_post_git_seg
 	__normandy_pl_end_prompt_l
 	echo ""
 	echo "END"
