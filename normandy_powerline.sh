@@ -76,18 +76,21 @@ NORMANDY_PL_GIT_UNTRACKED_FILES_GLYPH=$(echo -ne '\uF128')
 
 NORMANDY_PL_GIT_CLEAN_BG=148 # light green
 # NORMANDY_PL_GIT_CLEAN_BG=190 # light green
-NORMANDY_PL_GIT_CLEAN_FG=236 # dark grey
-NORMANDY_PL_GIT_UNSTAGED_BG=124 # dark red
-NORMANDY_PL_GIT_UNSTAGED_FG=231 # white
+# NORMANDY_PL_GIT_CLEAN_FG=236 # dark grey
+NORMANDY_PL_GIT_CLEAN_FG=22 # dark green
+# NORMANDY_PL_GIT_UNSTAGED_BG=124 # dark red
+# NORMANDY_PL_GIT_UNSTAGED_FG=231 # white
 # NORMANDY_PL_GIT_UNSTAGED_BG=172 # dark orange
 # NORMANDY_PL_GIT_UNSTAGED_FG=236 # dark grey
-NORMANDY_PL_GIT_STAGED_BG=220 # yellow-orange
-NORMANDY_PL_GIT_STAGED_FG=236 # dark grey
+NORMANDY_PL_GIT_UNSTAGED_BG=220 # yellow-orange
+NORMANDY_PL_GIT_UNSTAGED_FG=236 # dark grey
+NORMANDY_PL_GIT_STAGED_BG=5 # a pale, dark-ish purple
+NORMANDY_PL_GIT_STAGED_FG=255 # very light grey
 
 NORMANDY_PL_GIT_SHOW_HEAD="1"
 NORMANDY_PL_GIT_SHOW_STASHED="1"
 NORMANDY_PL_GIT_SHOW_UNSTAGED=""
-NORMANDY_PL_GIT_SHOW_STAGED=""
+NORMANDY_PL_GIT_SHOW_STAGED="1"
 NORMANDY_PL_GIT_SHOW_UNTRACKED="1"
 
 
@@ -335,10 +338,10 @@ __normandy_pl_post_git_seg () {
 	if [ "$WORKING_PATH" ]; then
 		if [ -w $(pwd) ]; then
 			__normandy_pl_start_segment_l $NORMANDY_PL_WRITABLE_DIR_BG
-			__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+			__normandy_pl_set_fg $NORMANDY_PL_WRITABLE_BASENAME_FG
 		else
 			__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
-			__normandy_pl_set_fg $NORMANDY_PL_PATH_FG
+			__normandy_pl_set_fg $NORMANDY_PL_NON_WRITABLE_BASENAME_FG
 		fi
 		__normandy_pl_shorten_path_ellipses "$WORKING_PATH" $NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
 		echo -n " "
