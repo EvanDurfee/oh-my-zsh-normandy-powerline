@@ -97,6 +97,9 @@ NORMANDY_PL_GIT_SHOW_UNSTAGED=""
 NORMANDY_PL_GIT_SHOW_STAGED="1"
 NORMANDY_PL_GIT_SHOW_UNTRACKED="1"
 
+# timestamp segment
+NORMANDY_PL_TIMESTAMP_FG=239
+NORMANDY_PL_TIMESTAMP_FORMAT="+%F %T"
 
 
 __normandy_pl_set_fg () {
@@ -364,4 +367,10 @@ __normandy_pl_prompt_left () {
 	__normandy_pl_end_prompt_l
 	echo ""
 	echo "END"
+}
+
+__normandy_pl_prompt_right () {
+	__normandy_pl_set_fg $NORMANDY_PL_TIMESTAMP_FG
+	echo -n $(date "$NORMANDY_PL_TIMESTAMP_FORMAT")
+	echo -ne  "\001\e[0m\002"
 }
