@@ -127,7 +127,7 @@ __normandy_pl_end_prompt_l () {
 }
 
 __normandy_pl_shell_status_seg () {
-	EXIT_STATUS=$?
+	EXIT_STATUS=$1
 	local NON_ZERO_EXIT_STATUS=""
 	local IS_ROOT=""
 	local JOBS=""
@@ -184,54 +184,37 @@ __normandy_pl_basename () {
 	echo -n $1 | sed -E "s#[^/]+\$##"
 }
 
-__normandy_pl_swap_home () {
-	# replaces $HOME in a path with ~
-	echo -n $1 | sed -E "s#^$HOME($|(/))#~\2#"
-}
-
-__normandy_pl_git_dir () {
-	# path to the git root or nothing if not in a git tree
-	echo -n $(git rev-parse --show-toplevel 2>/dev/null)
-}
-
-__normandy_pl_shorten_path_ellipses () {
-	# swaps all but the last ($2 + 1) path elements defined as (/.+) with ellipses
-	local SHORTENED=$(echo -n $1 | sed -E "s#^.*(/([^/]+/){$2}[^/]+)\$#\1#")
-	if [ "$SHORTENED" != "$1" ]; then
-		echo -n "$NORMANDY_PL_PATH_ELLIPSES_GLYPH$SHORTENED"
-	else
-		echo -n $SHORTENED
-	fi
+__normandy_pl_shorten_path () {
+	# swap home for ~ and replace all but the last $BASENAME_SEGMENTS + 1 path segments with a glyph
+	echo -n $1 | sed -E "s#^$HOME($|(/))#~\2#; s#^.*(/([^/]+/){$2}[^/]+)\$#$NORMANDY_PL_PATH_ELLIPSES_GLYPH\1#"
 }
 
 __normandy_pl_pre_git_path_seg () {
-	local WORKING_PATH="$(__normandy_pl_git_dir)"
+	local WORKING_PATH=$1
 	local BASENAME_SEGMENTS=$NORMANDY_PL_PRE_GIT_BASENAME_SEGMENTS
 	if [ "$WORKING_PATH" = "" ]; then
 		local WORKING_PATH="$(pwd)"
 		local BASENAME_SEGMENTS=$NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
 	fi
-	local WORKING_PATH=$(__normandy_pl_swap_home "$WORKING_PATH")
-	local WORKING_PATH=$(__normandy_pl_shorten_path_ellipses "$WORKING_PATH" $BASENAME_SEGMENTS)
+	if [ -w $WORKING_PATH ]; then
+		local WRITABLE_DIR=1
+	else
+		local WRITABLE_DIR=0
+	fi
 
-	if [ -w $(pwd) ]; then
+	local WORKING_PATH=$(__normandy_pl_shorten_path $WORKING_PATH $BASENAME_SEGMENTS)
+
+	if [ $WRITABLE_DIR -eq 1 ]; then
 		__normandy_pl_start_segment_l $NORMANDY_PL_WRITABLE_DIR_BG
-		echo -n "%F{$NORMANDY_PL_WRITABLE_BASENAME_FG}"
-		__normandy_pl_basename "$WORKING_PATH"
-		echo -n "%F{$NORMANDY_PL_PROJECT_DIR_FG}%B"
-		__normandy_pl_dirname "$WORKING_PATH"
+		echo -n "%F{$NORMANDY_PL_WRITABLE_BASENAME_FG}$(__normandy_pl_basename $WORKING_PATH)%F{$NORMANDY_PL_PROJECT_DIR_FG}%B$(__normandy_pl_dirname $WORKING_PATH)"
 	else
 		__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
-		echo -n "%F{$NORMANDY_PL_NON_WRITABLE_BASENAME_FG}"
-		__normandy_pl_basename "$WORKING_PATH"
-		echo -n "%B"
-		__normandy_pl_dirname "$WORKING_PATH"
+		echo -n "%F{$NORMANDY_PL_NON_WRITABLE_BASENAME_FG}$(__normandy_pl_basename $WORKING_PATH)%B$(__normandy_pl_dirname $WORKING_PATH)"
 	fi
-	echo -n "%b "
 }
 
 __normandy_pl_git_seg () {
-	local GIT_DIR="$(__normandy_pl_git_dir)"
+	local GIT_DIR=$1
 	if [ "$GIT_DIR" ]; then
 		local STASHED_CHANGES=""
 		local UNSTAGED_CHANGES=""
@@ -305,7 +288,7 @@ __normandy_pl_git_seg () {
 
 
 __normandy_pl_post_git_seg () {
-	local GIT_DIR=$(__normandy_pl_git_dir)
+	local GIT_DIR=$1
 	local WORKING_PATH=""
 	[ "$GIT_DIR" ] && local WORKING_PATH=$(pwd | sed -E "s#^${GIT_DIR}/?##")
 	if [ "$WORKING_PATH" ]; then
@@ -316,20 +299,25 @@ __normandy_pl_post_git_seg () {
 			__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
 			echo -n "%F{$NORMANDY_PL_NON_WRITABLE_BASENAME_FG}"
 		fi
-		__normandy_pl_shorten_path_ellipses "$WORKING_PATH" $NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
+		__normandy_pl_shorten_path "$WORKING_PATH" $NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
 		echo -n " "
 	fi
 }
 
 
 __normandy_pl_prompt_left () {
+	local EXIT_STATUS=$?
+	# local START=$(date "+%S%N")
 	NORMANDY_PL_BG_COLOR=""
-	__normandy_pl_shell_status_seg
+	local GIT_DIR="$(git rev-parse --show-toplevel 2>/dev/null)"
+	__normandy_pl_shell_status_seg $EXIT_STATUS
 	__normandy_pl_user_host_seg
-	__normandy_pl_pre_git_path_seg
-	__normandy_pl_git_seg
-	__normandy_pl_post_git_seg
+	__normandy_pl_pre_git_path_seg $GIT_DIR
+	__normandy_pl_git_seg $GIT_DIR
+	__normandy_pl_post_git_seg $GIT_DIR
 	__normandy_pl_end_prompt_l
+	# local END=$(date "+%S%N")
+	# echo -n "$(expr $END - $START)"
 }
 
 __normandy_pl_prompt_right () {
