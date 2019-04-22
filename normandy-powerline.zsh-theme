@@ -33,14 +33,16 @@ NORMANDY_PL_IS_ROOT_GLYPH="\$ "
 NORMANDY_PL_IS_ROOT_FG=2 # green
 
 # user host segment
-NORMANDY_PL_USER_HOST_BG=254 # light grey
-NORMANDY_PL_USER_FG=2 # green
-NORMANDY_PL_HOST_FG=2 # green
-# NORMANDY_PL_USER_HOST_BG=237 # dark grey
+# NORMANDY_PL_USER_HOST_BG=254 # light grey
+# NORMANDY_PL_USER_FG=22 # dark green
+# NORMANDY_PL_HOST_FG=22 # dark green
+NORMANDY_PL_USER_HOST_BG=237 # dark grey
+NORMANDY_PL_USER_FG=12 # green
+NORMANDY_PL_HOST_FG=12 # green
 # NORMANDY_PL_USER_FG=12 # blue
 # NORMANDY_PL_HOST_FG=12 # blue
 NORMANDY_PL_AT_HOSTNAME_GLYPH="@"
-NORMANDY_PL_SHOW_USER="ssh" # null (never), ssh, or other (always)
+NORMANDY_PL_SHOW_USER="always" # null (never), ssh, or other (always)
 NORMANDY_PL_SHOW_HOST="ssh" # null (never), ssh, or other (always)
 
 
@@ -326,4 +328,3 @@ __normandy_pl_prompt_right () {
 
 PROMPT='$(__normandy_pl_prompt_left)'
 RPROMPT='$(__normandy_pl_prompt_right)'
-# RPROMPT='FIXED_RPROMPT'
