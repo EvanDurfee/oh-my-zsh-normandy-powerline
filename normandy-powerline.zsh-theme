@@ -1,4 +1,3 @@
-
 #!/bin/zsh
 
 # global
@@ -28,7 +27,7 @@ NORMANDY_PL_RIGHT_SEPERATOR_GLYPH=$(echo -ne '\uE0B3')
 NORMANDY_PL_SHELL_STATUS_SEG_BG=231 # white
 NORMANDY_PL_EXIT_STATUS_GLYPH="! "
 NORMANDY_PL_EXIT_STATUS_FG=1 # red
-NORMANDY_PL_JOB_STATUS_GLYPH="% "
+NORMANDY_PL_JOB_STATUS_GLYPH="%% " # Need second % to escape for zsh
 NORMANDY_PL_JOB_STATUS_FG=24 # dark blue
 NORMANDY_PL_IS_ROOT_GLYPH="\$ "
 NORMANDY_PL_IS_ROOT_FG=2 # green
@@ -102,54 +101,29 @@ NORMANDY_PL_GIT_SHOW_UNTRACKED="1"
 NORMANDY_PL_TIMESTAMP_FG=239
 NORMANDY_PL_TIMESTAMP_FORMAT="+%F %T"
 
-
-__normandy_pl_set_fg () {
-	if [ $1 ]; then
-		echo -ne "\001\e[38;5;${1}m\002"
-	else
-		echo -ne "\001\e[39m\002" # default fg
-	fi
-}
-
-__normandy_pl_set_bold () {
-	echo -ne "\001\e[1m\002"
-}
-
-__normandy_pl_unset_bold () {
-	echo -ne "\001\e[22m\002"
-}
+# ZSH:
+# %B %b - bold
+# %F{number} %f - foreground color
+# %K{number} %k - background color
 
 __normandy_pl_start_segment_l () {
-	local NEW_BG_COLOR=$1
-	echo -ne "\001\e[48;5;${NEW_BG_COLOR}m\002"
-	case $NORMANDY_PL_BG_COLOR in
+	case "$NORMANDY_PL_BG_COLOR" in
 		"")
-			echo -n " "
+			echo -n "%K{$1} "
 			;;
-		$NEW_BG_COLOR)
-			echo -ne "$NORMANDY_PL_LEFT_SEPERATOR_GLYPH "
-			;;
-		*)
-			__normandy_pl_set_fg $NORMANDY_PL_BG_COLOR
-			echo -ne "$NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH "
-			;;
-	esac
-	NORMANDY_PL_BG_COLOR=$NEW_BG_COLOR
-}
-
-__normandy_pl_end_prompt_l () {
-	echo -ne "\001\e[49m\002"
-	case $NORMANDY_PL_BG_COLOR in
-		"")
-			__normandy_pl_set_fg 1 # default color ?
+		"$1")
 			echo -n "$NORMANDY_PL_LEFT_SEPERATOR_GLYPH "
 			;;
 		*)
-			__normandy_pl_set_fg $NORMANDY_PL_BG_COLOR
-			echo -n "$NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH "
+		  echo -n "%K{$1}%F{$NORMANDY_PL_BG_COLOR}$NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH "
 			;;
 	esac
-	echo -ne "\001\e[0m\002"
+	NORMANDY_PL_BG_COLOR=$1
+}
+
+__normandy_pl_end_prompt_l () {
+	[ "$NORMANDY_PL_BG_COLOR" = "" ] && NORMANDY_PL_BG_COLOR=1
+	echo -n "%k%F{$NORMANDY_PL_BG_COLOR}$NORMANDY_PL_LEFT_SEPERATOR_FILLED_GLYPH%f "
 }
 
 __normandy_pl_shell_status_seg () {
@@ -164,21 +138,15 @@ __normandy_pl_shell_status_seg () {
 
 	if [ "$NON_ZERO_EXIT_STATUS" -o "$IS_ROOT" -o "$JOBS" ]; then
 		__normandy_pl_start_segment_l $NORMANDY_PL_SHELL_STATUS_SEG_BG
-		__normandy_pl_set_bold
 		if [ $NON_ZERO_EXIT_STATUS ]; then
-			__normandy_pl_set_fg $NORMANDY_PL_EXIT_STATUS_FG
-			# echo -ne "\001\e[1m\002${NORMANDY_PL_EXIT_STATUS_GLYPH}\001\e[21m\002"
-			echo -n "${NORMANDY_PL_EXIT_STATUS_GLYPH}"
+			echo -n "%B%F{$NORMANDY_PL_EXIT_STATUS_FG}${NORMANDY_PL_EXIT_STATUS_GLYPH}%b"
 		fi
 		if [ $JOBS ]; then
-			__normandy_pl_set_fg $NORMANDY_PL_JOB_STATUS_FG
-			echo -n "${NORMANDY_PL_JOB_STATUS_GLYPH}"
+			echo -n "%B%F{$NORMANDY_PL_JOB_STATUS_FG}${NORMANDY_PL_JOB_STATUS_GLYPH}%b"
 		fi
 		if [ $IS_ROOT ]; then
-			__normandy_pl_set_fg $NORMANDY_PL_IS_ROOT_FG
-			echo -n "${NORMANDY_PL_IS_ROOT_GLYPH}"
+			echo -n "%B%F{$NORMANDY_PL_IS_ROOT_FG}${NORMANDY_PL_IS_ROOT_GLYPH}%b"
 		fi
-		__normandy_pl_unset_bold
 	fi
 }
 
@@ -190,18 +158,17 @@ __normandy_pl_user_host_seg () {
 
 	if [ "$SHOW_USER" -o "$SHOW_HOST" ]; then
 		__normandy_pl_start_segment_l $NORMANDY_PL_USER_HOST_BG
-		__normandy_pl_set_bold
 		if [ "$SHOW_USER" ]; then
-			__normandy_pl_set_fg $NORMANDY_PL_USER_FG
-			echo -n "$(whoami)"
+			echo -n "%B%F{$NORMANDY_PL_USER_FG}$(whoami)%b"
 		fi
 		if [ "$SHOW_HOST" ]; then
-			__normandy_pl_set_fg $NORMANDY_PL_HOST_FG
-			[ "$SHOW_USER" ] && echo -n "$NORMANDY_PL_AT_HOSTNAME_GLYPH"
-			echo -n "$(hostname)"
+			if [ "$SHOW_USER" ]; then
+				echo -n "%B%F{$NORMANDY_PL_HOST_FG}$NORMANDY_PL_AT_HOSTNAME_GLYPH$(hostname)%b"
+			else
+				echo -n "%B%F{$NORMANDY_PL_HOST_FG}$(hostname)%b"
+			fi
 		fi
 		echo -n " "
-		__normandy_pl_unset_bold
 	fi
 }
 
@@ -249,20 +216,18 @@ __normandy_pl_pre_git_path_seg () {
 
 	if [ -w $(pwd) ]; then
 		__normandy_pl_start_segment_l $NORMANDY_PL_WRITABLE_DIR_BG
-		__normandy_pl_set_fg $NORMANDY_PL_WRITABLE_BASENAME_FG
+		echo -n "%F{$NORMANDY_PL_WRITABLE_BASENAME_FG}"
 		__normandy_pl_basename "$WORKING_PATH"
-		__normandy_pl_set_bold
-		__normandy_pl_set_fg $NORMANDY_PL_PROJECT_DIR_FG
+		echo -n "%F{$NORMANDY_PL_PROJECT_DIR_FG}%B"
 		__normandy_pl_dirname "$WORKING_PATH"
 	else
 		__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
-		__normandy_pl_set_fg $NORMANDY_PL_NON_WRITABLE_BASENAME_FG
+		echo -n "%F{$NORMANDY_PL_NON_WRITABLE_BASENAME_FG}"
 		__normandy_pl_basename "$WORKING_PATH"
-		__normandy_pl_set_bold
+		echo -n "%B"
 		__normandy_pl_dirname "$WORKING_PATH"
 	fi
-	__normandy_pl_unset_bold
-	echo -n " "
+	echo -n "%b "
 }
 
 __normandy_pl_git_seg () {
@@ -290,13 +255,13 @@ __normandy_pl_git_seg () {
 		# set colors
 		if [ "$UNSTAGED_CHANGES" ]; then
 			__normandy_pl_start_segment_l $NORMANDY_PL_GIT_UNSTAGED_BG
-			__normandy_pl_set_fg $NORMANDY_PL_GIT_UNSTAGED_FG
+			echo -n "%F{$NORMANDY_PL_GIT_UNSTAGED_FG}"
 		elif [ "$STAGED_CHANGES" ]; then
 			__normandy_pl_start_segment_l $NORMANDY_PL_GIT_STAGED_BG
-			__normandy_pl_set_fg $NORMANDY_PL_GIT_STAGED_FG
+			echo -n "%F{$NORMANDY_PL_GIT_STAGED_FG}"
 		else
 			__normandy_pl_start_segment_l $NORMANDY_PL_GIT_CLEAN_BG
-			__normandy_pl_set_fg $NORMANDY_PL_GIT_CLEAN_FG
+			echo -n "%F{$NORMANDY_PL_GIT_CLEAN_FG}"
 		fi
 
 		# ahead / behind upstream (if set)
@@ -346,10 +311,10 @@ __normandy_pl_post_git_seg () {
 	if [ "$WORKING_PATH" ]; then
 		if [ -w $(pwd) ]; then
 			__normandy_pl_start_segment_l $NORMANDY_PL_WRITABLE_DIR_BG
-			__normandy_pl_set_fg $NORMANDY_PL_WRITABLE_BASENAME_FG
+			echo -n "%F{$NORMANDY_PL_WRITABLE_BASENAME_FG}"
 		else
 			__normandy_pl_start_segment_l $NORMANDY_PL_NON_WRITABLE_DIR_BG
-			__normandy_pl_set_fg $NORMANDY_PL_NON_WRITABLE_BASENAME_FG
+			echo -n "%F{$NORMANDY_PL_NON_WRITABLE_BASENAME_FG}"
 		fi
 		__normandy_pl_shorten_path_ellipses "$WORKING_PATH" $NORMANDY_PL_POST_GIT_BASENAME_SEGMENTS
 		echo -n " "
@@ -365,14 +330,12 @@ __normandy_pl_prompt_left () {
 	__normandy_pl_git_seg
 	__normandy_pl_post_git_seg
 	__normandy_pl_end_prompt_l
-	echo ""
 }
 
 __normandy_pl_prompt_right () {
-	__normandy_pl_set_fg $NORMANDY_PL_TIMESTAMP_FG
-	echo -n $(date "$NORMANDY_PL_TIMESTAMP_FORMAT")
-	echo -ne  "\001\e[0m\002"
+	echo -n "%F{$NORMANDY_PL_TIMESTAMP_FG}$(date $NORMANDY_PL_TIMESTAMP_FORMAT)"
 }
 
 PROMPT='$(__normandy_pl_prompt_left)'
-# RPROMPT='$(__normandy_pl_prompt_right)'
+RPROMPT='$(__normandy_pl_prompt_right)'
+# RPROMPT='FIXED_RPROMPT'
