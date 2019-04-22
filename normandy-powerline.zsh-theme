@@ -268,13 +268,13 @@ __normandy_pl_git_seg () {
 		local DOWNSTREAM_COMMITS="$(git rev-list --count @{upstream}..HEAD 2>/dev/null)"
 		local UPSTREAM_COMMITS="$(git rev-list --count HEAD..@{upstream} 2>/dev/null)"
 
-		if [ "$DOWNSTREAM_COMMITS" ]; then
-			if [ "$UPSTREAM_COMMITS" ]; then
+		if [ "$DOWNSTREAM_COMMITS" -a $DOWNSTREAM_COMMITS -gt 0 ]; then
+			if [ "$UPSTREAM_COMMITS" -a $UPSTREAM_COMMITS -gt 0 ]; then
 				echo -n "$NORMANDY_PL_GIT_AHEAD_AND_BEHIND_UPSTREAM_GLYPH"
 			else
 				echo -n "$NORMANDY_PL_GIT_AHEAD_OF_UPSTREAM_GLYPH"
 			fi
-		elif [ "$UPSTREAM_COMMITS" ]; then
+		elif [ "$UPSTREAM_COMMITS" -a $UPSTREAM_COMMITS -gt 0 ]; then
 			echo -n "$NORMANDY_PL_GIT_BEHIND_UPSTREAM_GLYPH"
 		fi
 
